@@ -42,7 +42,7 @@ export async function postTweetToMastodon(
 
   const status = await masto.v1.statuses.create({
     status: text,
-    visibility: "unlisted",
+    visibility: "public",
     mediaIds: attachments.map((attachment) => attachment.id),
     inReplyToId: maybeInReplyToId ?? undefined,
   });
