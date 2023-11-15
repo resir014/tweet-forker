@@ -14,12 +14,13 @@ import _, { compact } from "lodash";
 import { expandUrlsInTweetText } from "./redirects";
 const app = express();
 const port = process.env.PORT || 8080;
+const isDev = process.env.NODE_ENV !== "production";
 
 restoreFromDisk();
 
 app.all("*", async (req, res, next) => {
   const secret = req.query.secret || "";
-  if (secret !== process.env.SECRET) {
+  if (secret !== process.env.SECRET && !isDev) {
     return res.sendStatus(403);
   }
 
@@ -32,7 +33,11 @@ app.get("/", (_req, res) => {
 
 app.get("/u", async (req, res) => {
   try {
-    const url = new URL(String(req.query.url || ""));
+    const url = new URL(
+      String(req.query.url || "")
+        .replace(/^"/gi, "")
+        .replace(/"$/gi, ""),
+    );
     const services = String(req.query.services).split(",");
     const id = url.pathname.split("/").pop();
 
@@ -61,7 +66,7 @@ async function handleStatus(options: {
     return res
       .status(400)
       .send(
-        "No services selected! You need to pass `services=mastodon,bsky,cohost`"
+        "No services selected! You need to pass `services=mastodon,bsky,cohost`",
       );
   }
   try {
@@ -135,7 +140,7 @@ app.get("/thread", async (req, res) => {
     const tweets = await handleTweetInThread([fxStatus.tweet]);
 
     const hasUnauthorizedAuthor = tweets.some(
-      (t) => t.author.screen_name?.toLowerCase() !== process.env.SCREEN_NAME
+      (t) => t.author.screen_name?.toLowerCase() !== process.env.SCREEN_NAME,
     );
 
     if (hasUnauthorizedAuthor) {
