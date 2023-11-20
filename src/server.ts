@@ -77,7 +77,10 @@ async function handleStatus(options: {
   }
   try {
     let fxStatus = (await (
-      await request(`https://api.fxtwitter.com/status/${tweetId}`)
+      await request(
+        `https://api.fxtwitter.com/status/${tweetId}`,
+        baseRequestOptions,
+      )
     ).body.json()) as { tweet: APITweet };
 
     if (
@@ -125,19 +128,24 @@ async function handleStatus(options: {
 
     return res.sendStatus(200);
   } catch (e) {
+    console.error(e);
     return res.sendStatus(404);
   }
 }
 
-app.get("/thread", async (req, res) => {
+// "Disabled" route but i can't decide if i want to remove the code or not
+app.get("/_____thread", async (req, res) => {
   try {
     const url = new URL(String(req.query.url || ""));
     const id = url.pathname.split("/").pop();
     const fxStatus = (await (
-      await request(`https://api.fxtwitter.com/status/${id}`)
+      await request(
+        `https://api.fxtwitter.com/status/${id}`,
+        baseRequestOptions,
+      )
     ).body.json()) as { tweet: APITweet };
 
-    if (!fxStatus.tweet?.replying_to_status) {
+    if (!fxStatus.tweet?.replying_to?.post) {
       res.status(400);
 
       return res.send("Not a thread. Select the last tweet in your thread.");
@@ -165,7 +173,7 @@ app.get("/thread", async (req, res) => {
 
 async function handleTweetInThread(tweets: APITweet[]): Promise<APITweet[]> {
   const firstTweet = tweets[0];
-  const inReplyTo = firstTweet?.replying_to_status;
+  const inReplyTo = firstTweet?.replying_to?.post;
   const isFirstOfThread = !inReplyTo;
 
   if (isFirstOfThread) {
@@ -173,7 +181,10 @@ async function handleTweetInThread(tweets: APITweet[]): Promise<APITweet[]> {
   }
 
   const previousTweet = (await (
-    await request(`https://api.fxtwitter.com/status/${inReplyTo}`)
+    await request(
+      `https://api.fxtwitter.com/status/${inReplyTo}`,
+      baseRequestOptions,
+    )
   ).body.json()) as { tweet: APITweet };
 
   return handleTweetInThread([previousTweet.tweet, ...tweets]);
